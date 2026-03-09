@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATOM CORE – Lifecycle Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-dark:   #0f2444;
+    --blue-mid:    #1a4a8a;
+    --blue-light:  #2d7dd2;
+    --blue-pale:   #d6e8fb;
+    --blue-ghost:  #eef5fd;
+    --orange-dark: #a83200;
+    --orange-mid:  #d94f00;
+    --orange-light:#f07030;
+    --orange-pale: #ffe6d5;
+    --orange-ghost:#fff5ef;
+    --green-dark:  #0a3d1f;
+    --green-mid:   #177a3e;
+    --green-light: #22a85a;
+    --green-pale:  #d4f4e2;
+    --green-ghost: #effaf5;
+    --gray-900: #111827;
+    --gray-700: #374151;
+    --gray-500: #6b7280;
+    --gray-300: #d1d5db;
+    --gray-100: #f3f4f6;
+    --white: #ffffff;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #edf2f7;
+    color: var(--gray-900);
+    min-height: 100vh;
+    padding: 36px 28px 48px;
+  }
+
+  .page-header { text-align: center; margin-bottom: 26px; }
+  .page-header .eyebrow { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gray-500); margin-bottom: 8px; }
+  .page-header h1 { font-size: 27px; font-weight: 700; color: var(--gray-900); letter-spacing: -0.4px; }
+  .page-header h1 span { color: var(--blue-light); }
+  .page-header .subtitle { margin-top: 5px; font-size: 13px; color: var(--gray-500); }
+
+  .legend { display: flex; justify-content: center; gap: 22px; flex-wrap: wrap; margin-bottom: 24px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--gray-700); }
+  .legend-dot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+
+  /* Lead source */
+  .lead-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding-left: 4px; }
+  .lead-box { background: var(--white); border: 2px solid var(--blue-light); border-radius: 10px; padding: 11px 14px; min-width: 148px; box-shadow: var(--shadow-sm); flex-shrink: 0; }
+  .lb-label { font-family: 'Space Mono', monospace; font-size: 7.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--blue-light); margin-bottom: 4px; }
+  .lb-title { font-weight: 700; font-size: 12px; color: var(--blue-dark); margin-bottom: 5px; }
+  .lb-subs  { font-size: 10px; color: var(--gray-500); line-height: 1.75; }
+  .la-block { display: flex; flex-direction: column; gap: 3px; }
+  .la-line  { display: flex; align-items: center; }
+  .la-dash  { width: 54px; height: 2px; background: var(--blue-light); position: relative; }
+  .la-dash::after { content: ''; position: absolute; right: 0; top: -3.5px; border-left: 7px solid var(--blue-light); border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
+  .la-note  { font-size: 9.5px; color: var(--gray-500); font-style: italic; max-width: 200px; line-height: 1.4; }
+
+  /* MAIN SWIMLANE ROW */
+  .swimlane-row {
+    display: flex;
+    align-items: stretch;
+    background: var(--white);
+    border-radius: 18px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+
+  /* System panels */
+  .sys-panel { display: flex; flex-direction: column; padding: 16px 16px 18px; min-width: 0; }
+  .sys-panel.hubspot  { flex: 5; background: linear-gradient(160deg,#e6f0fd 0%,#f0f7ff 100%); }
+  .sys-panel.delivery { flex: 3; background: linear-gradient(160deg,#fff0e6 0%,#fff8f2 100%); }
+
+  .sp-header { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; flex-shrink: 0; }
+  .sp-icon { width: 30px; height: 30px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+  .hubspot  .sp-icon  { background: var(--blue-mid); }
+  .delivery .sp-icon  { background: var(--orange-mid); }
+  .sp-meta  { flex: 1; min-width: 0; }
+  .sp-name  { font-weight: 700; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hubspot  .sp-name  { color: var(--blue-dark); }
+  .delivery .sp-name  { color: var(--orange-dark); }
+  .sp-sub   { font-size: 10px; color: var(--gray-500); margin-top: 1px; }
+  .sp-badge { font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; flex-shrink: 0; }
+  .hubspot  .sp-badge { background: var(--blue-mid);   color: var(--white); }
+  .delivery .sp-badge { background: var(--orange-mid); color: var(--white); }
+
+  .atom3d-tag { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(90deg,#0a3d1f,#177a3e); border-radius: 5px; padding: 4px 10px; margin-bottom: 10px; align-self: flex-start; }
+  .atom3d-tag span   { font-family: 'Space Mono', monospace; font-size: 7px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+  .atom3d-tag strong { font-size: 10.5px; font-weight: 700; color: var(--white); }
+
+  /* Stages row inside panel */
+  .stages-grid { display: flex; gap: 7px; flex: 1; align-items: stretch; }
+
+  /* Stage card */
+  .stage-card { flex: 1; border-radius: 9px; overflow: hidden; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; transition: transform 0.18s, box-shadow 0.18s; min-width: 0; }
+  .stage-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+  .sc-head { padding: 7px 9px 5px; flex-shrink: 0; }
+  .hubspot  .stage-card     .sc-head { background: var(--blue-mid); }
+  .delivery .stage-card     .sc-head { background: var(--orange-mid); }
+  .delivery .stage-card.impl .sc-head { background: var(--green-mid); }
+
+  .sc-num   { font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700; color: rgba(255,255,255,0.5); letter-spacing: 0.05em; }
+  .sc-name  { font-weight: 700; font-size: 11.5px; color: var(--white); margin: 2px 0 3px; }
+  .sc-pill  { display: inline-block; font-size: 7.5px; font-weight: 600; background: rgba(255,255,255,0.2); color: var(--white); padding: 1px 5px; border-radius: 999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+  .sc-body  { padding: 9px 9px 11px; flex: 1; display: flex; flex-direction: column; }
+  .hubspot  .stage-card      .sc-body { background: #f4f9ff; }
+  .delivery .stage-card      .sc-body { background: #fff6f0; }
+  .delivery .stage-card.impl .sc-body { background: #f0faf4; }
+
+  .sc-lbl { font-family: 'Space Mono', monospace; font-size: 7px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gray-500); margin-bottom: 5px; }
+  .sc-list { list-style: none; flex: 1; }
+  .sc-list li { font-size: 10px; color: var(--gray-700); padding: 2.5px 0; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: flex-start; gap: 5px; line-height: 1.35; }
+  .sc-list li:last-child { border-bottom: none; }
+  .sc-list li::before { content: ''; width: 4px; height: 4px; border-radius: 50%; margin-top: 3.5px; flex-shrink: 0; }
+  .hubspot  .stage-card      .sc-list li::before { background: var(--blue-light); }
+  .delivery .stage-card      .sc-list li::before { background: var(--orange-light); }
+  .delivery .stage-card.impl .sc-list li::before { background: var(--green-light); }
+
+  .sc-owner { margin-top: 7px; padding-top: 5px; border-top: 1px solid rgba(0,0,0,0.07); display: flex; align-items: center; gap: 4px; }
+  .sc-owner .oi { font-size: 9.5px; }
+  .sc-owner .ot { font-size: 9px; font-weight: 600; color: var(--gray-500); }
+
+  /* Stage-to-stage arrow */
+  .s-arrow { display: flex; align-items: center; flex-shrink: 0; padding-top: 26px; }
+  .s-line  { width: 8px; height: 2px; background: var(--gray-300); position: relative; }
+  .s-line::after { content: ''; position: absolute; right: 0; top: -3px; border-left: 5px solid var(--gray-300); border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent; }
+
+  /* DIVIDER */
+  .panel-divider { width: 60px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--gray-900); padding: 10px 4px; gap: 6px; }
+  .pd-lock   { font-size: 18px; }
+  .pd-line   { width: 2px; flex: 1; background: rgba(255,255,255,0.18); max-height: 36px; position: relative; }
+  .pd-line::after { content: ''; position: absolute; bottom: -1px; left: -4px; border-top: 5px solid rgba(255,255,255,0.18); border-left: 5px solid transparent; border-right: 5px solid transparent; }
+  .pd-lbl    { font-family: 'Space Mono', monospace; font-size: 6.5px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.5); text-align: center; line-height: 1.5; writing-mode: vertical-rl; transform: rotate(180deg); }
+  .pd-rocket { font-size: 15px; }
+
+  /* Feedback loop */
+  .feedback-bar { background: var(--white); border-radius: 11px; border: 2px dashed var(--green-light); padding: 11px 18px; display: flex; align-items: center; gap: 13px; box-shadow: var(--shadow-sm); margin-bottom: 18px; }
+  .fb-icon  { font-size: 18px; color: var(--green-mid); flex-shrink: 0; }
+  .fb-text  { flex: 1; }
+  .fb-title { font-weight: 700; font-size: 12px; color: var(--green-dark); }
+  .fb-sub   { font-size: 10px; color: var(--gray-500); font-style: italic; margin-top: 1px; }
+  .fb-tag   { font-family: 'Space Mono', monospace; font-size: 7.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: var(--green-pale); color: var(--green-dark); padding: 4px 9px; border-radius: 999px; flex-shrink: 0; }
+
+  /* Data flow */
+  .data-flow-section { background: var(--white); border-radius: 15px; padding: 18px 22px; box-shadow: var(--shadow-md); }
+  .dfs-title { font-size: 13.5px; font-weight: 700; color: var(--gray-900); margin-bottom: 2px; }
+  .dfs-sub   { font-size: 11px; color: var(--gray-500); margin-bottom: 16px; }
+  .df-row    { display: flex; align-items: stretch; }
+  .df-node   { flex: 1; min-width: 0; border-radius: 9px; padding: 12px 11px; }
+  .df-node.n1 { background: var(--blue-ghost);  border: 1.5px solid var(--blue-pale); }
+  .df-node.n2 { background: #f0f7ff;             border: 1.5px solid #b0d4f8; }
+  .df-node.n3 { background: var(--orange-ghost); border: 1.5px solid var(--orange-pale); }
+  .df-node.n4 { background: var(--green-ghost);  border: 1.5px solid var(--green-pale); }
+  .df-arr    { width: 34px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+  .df-line   { width: 100%; height: 2px; position: relative; }
+  .df-line::after { content: ''; position: absolute; right: 0; top: -3.5px; border-left: 6px solid; border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
+  .df-line.bl { background: var(--blue-light); }   .df-line.bl::after { border-left-color: var(--blue-light); }
+  .df-line.or { background: var(--orange-light); }  .df-line.or::after { border-left-color: var(--orange-light); }
+  .df-line.gr { background: var(--green-light); }   .df-line.gr::after { border-left-color: var(--green-light); }
+  .df-albl   { font-size: 7.5px; font-style: italic; color: var(--gray-500); text-align: center; line-height: 1.3; }
+  .dn-sys    { font-family: 'Space Mono', monospace; font-size: 7px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
+  .n1 .dn-sys { color: var(--blue-light); } .n2 .dn-sys { color: var(--blue-mid); }
+  .n3 .dn-sys { color: var(--orange-mid); } .n4 .dn-sys { color: var(--green-mid); }
+  .dn-title  { font-weight: 700; font-size: 11.5px; color: var(--gray-900); margin-bottom: 6px; }
+  .dn-list   { list-style: none; }
+  .dn-list li { font-size: 9.5px; color: var(--gray-700); padding: 2px 0; display: flex; gap: 4px; align-items: flex-start; }
+  .dn-list li::before { content: '→'; font-size: 8.5px; flex-shrink: 0; margin-top: 1px; }
+  .n1 .dn-list li::before { color: var(--blue-light); } .n2 .dn-list li::before { color: var(--blue-mid); }
+  .n3 .dn-list li::before { color: var(--orange-mid); } .n4 .dn-list li::before { color: var(--green-mid); }
+
+  .footer { text-align: center; margin-top: 26px; font-size: 10px; color: var(--gray-500); font-family: 'Space Mono', monospace; }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .swimlane-row      { animation: fadeUp 0.35s ease both; }
+  .feedback-bar      { animation: fadeUp 0.35s ease 0.08s both; }
+  .data-flow-section { animation: fadeUp 0.35s ease 0.16s both; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="eyebrow">Internal Reference · System Architecture</div>
+  <h1>ATOM <span>CORE</span> — Customer Lifecycle Architecture</h1>
+  <div class="subtitle">8-Stage end-to-end lifecycle &nbsp;·&nbsp; System ownership &nbsp;·&nbsp; Team responsibilities &nbsp;·&nbsp; Data flow</div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#1a4a8a"></div>HubSpot CRM (Stages 1–5)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#111827"></div>Commercial Lock / Handoff</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#d94f00"></div>Delivery Operations (Stages 6–8)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#177a3e"></div>ATOM 3D Implementation</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#22a85a; border-radius:50%"></div>Expansion Loop</div>
+</div>
+
+<!-- Lead source -->
+<div class="lead-row">
+  <div class="lead-box">
+    <div class="lb-label">📋 Data Source</div>
+    <div class="lb-title">HubSpot Leads</div>
+    <div class="lb-subs">P1 – New<br>P2 – Attempting<br>P3 – Connected<br>P4 – Nurture<br>P5 – Disqualified</div>
+  </div>
+  <div class="la-block">
+    <div class="la-line"><div class="la-dash"></div></div>
+    <div class="la-note">"Lead data pulled via HubSpot API and converted to a Deal when opportunity is identified."</div>
+  </div>
+</div>
+
+<!-- MAIN SINGLE-ROW SWIMLANE -->
+<div class="swimlane-row">
+
+  <!-- SECTION A: HubSpot CRM -->
+  <div class="sys-panel hubspot">
+    <div class="sp-header">
+      <div class="sp-icon">🔵</div>
+      <div class="sp-meta">
+        <div class="sp-name">HubSpot CRM — Sales Pipeline Management</div>
+        <div class="sp-sub">Stages 1–5 &nbsp;·&nbsp; Sales, Product &amp; Legal</div>
+      </div>
+      <div class="sp-badge">Stages 1–5</div>
+    </div>
+    <div class="stages-grid">
+
+      <div class="stage-card">
+        <div class="sc-head"><div class="sc-num">Stage 01</div><div class="sc-name">Prospect</div><div class="sc-pill">Sales</div></div>
+        <div class="sc-body">
+          <div class="sc-lbl">Sub-stages</div>
+          <ul class="sc-list"><li>P1 – New</li><li>P2 – Attempting</li><li>P3 – Connected</li><li>P4 – Nurture</li><li>P5 – Disqualified</li></ul>
+          <div class="sc-owner"><span class="oi">👤</span><span class="ot">Sales</span></div>
+        </div>
+      </div>
+      <div class="s-arrow"><div class="s-line"></div></div>
+
+      <div class="stage-card">
+        <div class="sc-head"><div class="sc-num">Stage 02</div><div class="sc-name">Qualify</div><div class="sc-pill">Sales + Product</div></div>
+        <div class="sc-body">
+          <div class="sc-lbl">Sub-stages</div>
+          <ul class="sc-list"><li>BANT Document Submitted</li><li>Stakeholder Map</li></ul>
+          <div class="sc-owner"><span class="oi">👥</span><span class="ot">Sales + Product</span></div>
+        </div>
+      </div>
+      <div class="s-arrow"><div class="s-line"></div></div>
+
+      <div class="stage-card">
+        <div class="sc-head"><div class="sc-num">Stage 03</div><div class="sc-name">Discovery</div><div class="sc-pill">Product / BA</div></div>
+        <div class="sc-body">
+          <div class="sc-lbl">Sub-stages</div>
+          <ul class="sc-list"><li>Discovery Workshops</li><li>Requirements Mapping</li><li>Workflow Documentation</li></ul>
+          <div class="sc-owner"><span class="oi">🔍</span><span class="ot">Product / BA</span></div>
+        </div>
+      </div>
+      <div class="s-arrow"><div class="s-line"></div></div>
+
+      <div class="stage-card">
+        <div class="sc-head"><div class="sc-num">Stage 04</div><div class="sc-name">Validate</div><div class="sc-pill">Product + Delivery</div></div>
+        <div class="sc-body">
+          <div class="sc-lbl">Sub-stages</div>
+          <ul class="sc-list"><li>V1 – Preparing</li><li>V2 – Submitted</li><li>V3 – Approved</li><li>POV Requested</li><li>POV Completed</li></ul>
+          <div class="sc-owner"><span class="oi">✅</span><span class="ot">Product + Delivery</span></div>
+        </div>
+      </div>
+      <div class="s-arrow"><div class="s-line"></div></div>
+
+      <div class="stage-card">
+        <div class="sc-head"><div class="sc-num">Stage 05</div><div class="sc-name">Contract</div><div class="sc-pill">Sales + Legal</div></div>
+        <div class="sc-body">
+          <div class="sc-lbl">Sub-stages</div>
+          <ul class="sc-list"><li>C1 – MSA / SOW Sent</li><li>C2 – Redlines</li><li>C3 – Agree Terms</li><li>C4 – Signed</li></ul>
+          <div class="sc-owner"><span class="oi">📝</span><span class="ot">Sales + Legal</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DIVIDER -->
+  <div class="panel-divider">
+    <div class="pd-lock">🔒</div>
+    <div class="pd-line"></div>
+    <div class="pd-lbl">Commercial Lock · Handoff</div>
+    <div class="pd-line"></div>
+    <div class="pd-rocket">🚀</div>
+  </div>
+
+  <!-- SECTION B: Delivery Operations -->
+  <div class="sys-panel delivery">
+    <div class="sp-header">
+      <div class="sp-icon">🟠</div>
+      <div class="sp-meta">
+        <div class="sp-name">Delivery Operations — Implementation &amp; Customer Lifecycle</div>
+        <div class="sp-sub">Stages 6–8 &nbsp;·&nbsp; Delivery, Operations &amp; Customer Success</div>
+      </div>
+      <div class="sp-badge">Stages 6–8</div>
+    </div>
+    <div class="atom3d-tag">
+      <span>Methodology</span>
+      <strong>ATOM 3D — Activated at Stage 6</strong>
+    </div>
+    <div class="stages-grid">
+
+      <div class="stage-card impl">
+        <div class="sc-head"><div class="sc-num">Stage 06</div><div class="sc-name">Implement</div><div class="sc-pill">Delivery Team</div></div>
+        <div class="sc-body">
+          <div class="sc-lbl">ATOM 3D Phases</div>
+          <ul class="sc-list"><li>I1 – Initiate / Discover</li><li>I2 – Design</li><li>I3 – Configure</li><li>I4 – UAT</li><li>I5 – Deploy</li></ul>
+          <div class="sc-owner"><span class="oi">⚙️</span><span class="ot">Delivery Team</span></div>
+        </div>
+      </div>
+      <div class="s-arrow"><div class="s-line"></div></div>
+
+      <div class="stage-card">
+        <div class="sc-head"><div class="sc-num">Stage 07</div><div class="sc-name">Warranty</div><div class="sc-pill">Operations</div></div>
+        <div class="sc-body">
+          <div class="sc-lbl">Activities</div>
+          <ul class="sc-list"><li>Production Stabilization</li><li>Issue Resolution</li><li>Monitoring</li></ul>
+          <div class="sc-owner"><span class="oi">🛡️</span><span class="ot">Operations</span></div>
+        </div>
+      </div>
+      <div class="s-arrow"><div class="s-line"></div></div>
+
+      <div class="stage-card">
+        <div class="sc-head"><div class="sc-num">Stage 08</div><div class="sc-name">Active</div><div class="sc-pill">Ops / CS</div></div>
+        <div class="sc-body">
+          <div class="sc-lbl">Activities</div>
+          <ul class="sc-list"><li>Steady-State Operations</li><li>Customer Success</li><li>Account Expansion</li></ul>
+          <div class="sc-owner"><span class="oi">🌟</span><span class="ot">Ops / Customer Success</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /swimlane-row -->
+
+<!-- Expansion Loop -->
+<div class="feedback-bar">
+  <div class="fb-icon">↩</div>
+  <div class="fb-text">
+    <div class="fb-title">Active → Qualify &nbsp;·&nbsp; Account Expansion Loop</div>
+    <div class="fb-sub">"New opportunities within existing accounts restart the qualification process at Stage 2 — Qualify."</div>
+  </div>
+  <div class="fb-tag">Expansion Loop</div>
+</div>
+
+<!-- Data Flow Section -->
+<div class="data-flow-section">
+  <div class="dfs-title">📊 Data Flow Architecture</div>
+  <div class="dfs-sub">How data moves through the ATOM CORE system — from lead capture to live operations monitoring</div>
+  <div class="df-row">
+    <div class="df-node n1">
+      <div class="dn-sys">HubSpot</div>
+      <div class="dn-title">Leads</div>
+      <ul class="dn-list"><li>New / Attempting contacts</li><li>Connected leads</li><li>Nurture sequences</li><li>Disqualified contacts</li></ul>
+    </div>
+    <div class="df-arr"><div class="df-line bl"></div><div class="df-albl">API<br>Conversion</div></div>
+    <div class="df-node n2">
+      <div class="dn-sys">HubSpot CRM</div>
+      <div class="dn-title">Deals Pipeline</div>
+      <ul class="dn-list"><li>Stages 1–5 tracked</li><li>BANT qualification</li><li>POV &amp; validation</li><li>Signed contracts</li></ul>
+    </div>
+    <div class="df-arr"><div class="df-line or"></div><div class="df-albl">Commercial<br>Lock Handoff</div></div>
+    <div class="df-node n3">
+      <div class="dn-sys">Implementation Tracker</div>
+      <div class="dn-title">Project Mgmt</div>
+      <ul class="dn-list"><li>ATOM 3D phases I1–I5</li><li>Delivery milestones</li><li>UAT signoffs</li><li>Warranty period</li></ul>
+    </div>
+    <div class="df-arr"><div class="df-line gr"></div><div class="df-albl">Go-Live →<br>Active State</div></div>
+    <div class="df-node n4">
+      <div class="dn-sys">Operations</div>
+      <div class="dn-title">Live Monitoring</div>
+      <ul class="dn-list"><li>Steady-state tracking</li><li>SLA &amp; health metrics</li><li>CS engagement</li><li>Expansion signals</li></ul>
+    </div>
+  </div>
+</div>
+
+<div class="footer">ATOM CORE Lifecycle &nbsp;·&nbsp; Internal Reference &nbsp;·&nbsp; Confidential</div>
+
+</body>
+</html>
