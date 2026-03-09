@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATOM CORE 8 — Lifecycle Workflow Diagrams</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f0f4f8;
+  --surface:   #ffffff;
+  --surface2:  #f8fafc;
+  --border:    rgba(0,0,0,0.07);
+  --border2:   rgba(0,0,0,0.11);
+
+  --lead:      #0284c7;
+  --lead-dim:  rgba(2,132,199,0.09);
+  --lead-mid:  rgba(2,132,199,0.2);
+
+  --deal:      #7c3aed;
+  --deal-dim:  rgba(124,58,237,0.09);
+  --deal-mid:  rgba(124,58,237,0.18);
+
+  --impl:      #059669;
+  --impl-dim:  rgba(5,150,105,0.09);
+  --impl-mid:  rgba(5,150,105,0.18);
+
+  --gold:      #d97706;
+  --gold-dim:  rgba(217,119,6,0.09);
+  --gold-mid:  rgba(217,119,6,0.18);
+
+  --danger:    #dc2626;
+  --danger-dim:rgba(220,38,38,0.08);
+
+  --gate:      #ea580c;
+  --gate-dim:  rgba(234,88,12,0.1);
+
+  --text:      #0f172a;
+  --text-muted:#475569;
+  --text-faint:#94a3b8;
+
+  --shadow: 0 2px 12px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.05);
+  --shadow-lg: 0 6px 28px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.06);
+
+  --lane-gap: 8px;
+  --lane-gate-gap: 10px;
+  --lane-gate-offset: 2px;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ──────────────────────────────────── */
+.masthead {
+  padding: 40px 40px 0;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  position: relative;
+}
+.masthead::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--lead), var(--deal), var(--impl), var(--gold), transparent);
+  border-radius: 0 0 2px 2px;
+}
+.mh-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--text-faint);
+}
+.mh-title {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 32px; font-weight: 800; letter-spacing: -0.5px;
+  text-align: center;
+}
+.mh-title .hl-lead { color: var(--lead); }
+.mh-title .hl-deal { color: var(--deal); }
+.mh-title .hl-impl { color: var(--impl); }
+.mh-title .hl-gold { color: var(--gold); }
+.mh-sub {
+  font-size: 13px; color: var(--text-muted); text-align: center;
+  max-width: 640px; line-height: 1.6;
+}
+
+/* ── TABS ────────────────────────────────────── */
+.tabs-nav {
+  display: flex; gap: 4px;
+  padding: 24px 40px 0;
+  border-bottom: 1px solid var(--border);
+}
+.tab-btn {
+  font-family: 'IBM Plex Sans', monospace;
+  font-size: 12px; font-weight: 500;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 10px 20px; border-radius: 8px 8px 0 0;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: transparent; color: var(--text-faint);
+  cursor: pointer; transition: all 0.2s;
+  position: relative; bottom: -1px;
+}
+.tab-btn:hover { color: var(--text-muted); background: var(--surface2); border-color: var(--border2); }
+.tab-btn:focus-visible {
+  outline: 2px solid var(--lead);
+  outline-offset: 2px;
+}
+.tab-btn.active {
+  background: var(--surface);
+  border-color: var(--border2);
+  border-bottom-color: var(--surface);
+  color: var(--text);
+}
+.tab-btn.t1.active { color: var(--lead); }
+.tab-btn.t2.active { color: var(--deal); }
+.tab-btn.t3.active { color: var(--gold); }
+
+.tab-panel { display: none; padding: 32px 40px 48px; }
+.tab-panel.active { display: block; }
+
+/* ── SHARED COMPONENTS ───────────────────────── */
+.panel-title {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 18px; font-weight: 700; margin-bottom: 4px;
+}
+.panel-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 28px; }
+
+/* Legend */
+.legend-row {
+  display: flex; gap: 20px; flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.leg-item {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11.5px; font-weight: 500; color: var(--text-muted);
+}
+.leg-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.leg-diamond {
+  width: 10px; height: 10px;
+  transform: rotate(45deg); border-radius: 1px; flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════
+   TAB 1 — SWIMLANE DIAGRAM
+═══════════════════════════════════════════════ */
+.swimlane-wrapper {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border2);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+/* Lane headers */
+.lane-headers {
+  display: grid;
+  grid-template-columns: 120px 1fr 1fr 1fr 1fr;
+  border-bottom: 1px solid var(--border2);
+  background: #f8fafc;
+}
+.lh-spacer { background: #f1f5f9; border-right: 1px solid var(--border2); }
+.lane-head {
+  padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 4px;
+  border-right: 1px solid var(--border2);
+}
+.lane-head:last-child { border-right: none; }
+.lh-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-faint);
+}
+.lh-name { font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 700; }
+.lh-name.c-lead { color: var(--lead); }
+.lh-name.c-deal { color: var(--deal); }
+.lh-name.c-impl { color: var(--impl); }
+.lh-name.c-gold { color: var(--gold); }
+.lh-tag {
+  font-size: 9px; font-weight: 600;
+  padding: 2px 7px; border-radius: 999px; display: inline-block; width: fit-content;
+}
+.lh-tag.t-hs  { background: rgba(56,189,248,0.15); color: var(--lead); }
+.lh-tag.t-int { background: rgba(52,211,153,0.15); color: var(--impl); }
+
+/* Lane body row */
+.lane-body {
+  display: grid;
+  grid-template-columns: 120px 1fr 1fr 1fr 1fr;
+}
+.lane-gutter {
+  background: #f1f5f9;
+  border-right: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px 4px;
+}
+.lg-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text-faint); writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.lane-col {
+  border-right: 1px solid var(--border);
+  padding: 20px 14px;
+  display: flex; flex-direction: column; align-items: center; gap: var(--lane-gap);
+  position: relative;
+}
+.lane-col:last-child { border-right: none; }
+.lane-col.is-placeholder {
+  justify-content: flex-end;
+  padding-top: 0;
+}
+.lane-col.is-placeholder > .lane-placeholder-spacer {
+  flex: 1;
+}
+
+/* Stage node */
+.snode {
+  width: 100%; border-radius: 9px;
+  padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 3px;
+  position: relative; cursor: default;
+  transition: transform 0.15s;
+}
+.snode:hover { transform: translateY(-1px); }
+.snode.lead  { background: var(--lead-dim);  border: 1px solid rgba(56,189,248,0.3); }
+.snode.deal  { background: var(--deal-dim);  border: 1px solid rgba(167,139,250,0.3); }
+.snode.impl  { background: var(--impl-dim);  border: 1px solid rgba(52,211,153,0.3); }
+.snode.gold  { background: var(--gold-dim);  border: 1px solid rgba(251,191,36,0.3); }
+.snode.nurture { background: rgba(148,163,184,0.08); border: 1px dashed rgba(148,163,184,0.25); }
+.snode.lost    { background: var(--danger-dim); border: 1px dashed rgba(248,113,113,0.3); }
+
+.sn-num  {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px; font-weight: 500;
+  opacity: 0.5;
+}
+.sn-name { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 700; }
+.sn-sub  { font-size: 10px; color: var(--text-muted); line-height: 1.45; }
+.snode.lead  .sn-name { color: var(--lead); }
+.snode.deal  .sn-name { color: var(--deal); }
+.snode.impl  .sn-name { color: var(--impl); }
+.snode.gold  .sn-name { color: var(--gold); }
+.snode.nurture .sn-name { color: var(--text-muted); }
+.snode.lost    .sn-name { color: var(--danger); }
+
+/* Down arrow in lane */
+.lane-arrow {
+  width: 2px; height: 14px; position: relative;
+  flex-shrink: 0;
+}
+.lane-arrow::after {
+  content: '';
+  position: absolute; bottom: -1px; left: -4px;
+  border-top: 6px solid; border-left: 5px solid transparent; border-right: 5px solid transparent;
+}
+.lane-arrow.lead { background: rgba(56,189,248,0.4); }  .lane-arrow.lead::after { border-top-color: rgba(56,189,248,0.4); }
+.lane-arrow.deal { background: rgba(167,139,250,0.4); } .lane-arrow.deal::after { border-top-color: rgba(167,139,250,0.4); }
+.lane-arrow.impl { background: rgba(52,211,153,0.4); }  .lane-arrow.impl::after { border-top-color: rgba(52,211,153,0.4); }
+.lane-arrow.gold { background: rgba(251,191,36,0.4); }  .lane-arrow.gold::after { border-top-color: rgba(251,191,36,0.4); }
+
+/* Decision gate diamond */
+.gate-node {
+  width: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: var(--lane-gate-gap);
+  margin-block: 6px;
+}
+.gate-diamond {
+  width: 72px; height: 72px;
+  background: var(--gate-dim);
+  border: 2px solid var(--gate);
+  transform: rotate(45deg);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-block: 2px;
+}
+.gate-diamond span {
+  transform: rotate(-45deg);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; font-weight: 500;
+  color: var(--gate);
+  text-align: center; line-height: 1.3;
+}
+.gate-label {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 11.5px; font-weight: 700;
+  color: var(--gate); text-align: center;
+  margin-top: 2px;
+}
+.gate-options {
+  display: flex;
+  gap: 14px;
+  width: auto;
+  justify-content: center;
+  margin-top: 2px;
+}
+.go-yes, .go-no {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8.5px; font-weight: 500;
+  padding: 2px 8px; border-radius: 999px;
+}
+.go-yes { background: rgba(52,211,153,0.15); color: var(--impl); }
+.go-no  { background: rgba(248,113,113,0.15); color: var(--danger); }
+
+/* Handoff banner */
+.handoff-banner {
+  grid-column: 1 / -1;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 10px 20px;
+  background: linear-gradient(90deg, rgba(124,58,237,0.06), transparent, rgba(5,150,105,0.06));
+  border-top: 1px solid var(--border2);
+  border-bottom: 1px solid var(--border2);
+}
+.hb-lock { font-size: 16px; }
+.hb-line {
+  flex: 1; height: 2px; max-width: 200px;
+  background: linear-gradient(90deg, var(--deal), var(--impl));
+  position: relative;
+}
+.hb-line::after {
+  content: '';
+  position: absolute; right: 0; top: -3.5px;
+  border-left: 7px solid var(--impl);
+  border-top: 4.5px solid transparent;
+  border-bottom: 4.5px solid transparent;
+}
+.hb-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.hb-text .hb-lock-word { color: var(--deal); }
+.hb-text .hb-arrow-word { color: var(--impl); }
+.hb-rocket { font-size: 16px; }
+
+/* Cross-lane conversion arrow */
+.conv-box {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px; font-weight: 500;
+  padding: 5px 12px; border-radius: 6px;
+}
+.conv-lead { background: var(--lead-dim); color: var(--lead); border: 1px solid rgba(56,189,248,0.3); }
+.conv-deal { background: var(--deal-dim); color: var(--deal); border: 1px solid rgba(167,139,250,0.3); }
+.conv-arrow {
+  flex: 1; height: 2px; max-width: 120px;
+  background: linear-gradient(90deg, var(--lead), var(--deal));
+  position: relative;
+}
+.conv-arrow::after {
+  content: ''; position: absolute; right: 0; top: -3.5px;
+  border-left: 7px solid var(--deal);
+  border-top: 4.5px solid transparent;
+  border-bottom: 4.5px solid transparent;
+}
+.conv-note {
+  font-size: 10px; color: var(--text-muted); font-style: italic;
+}
+.conv-chip {
+  background: rgba(251,191,36,0.12); color: var(--gold);
+  font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; font-weight: 500;
+  padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(251,191,36,0.3);
+}
+
+/* ═══════════════════════════════════════════════
+   TAB 2 — DETAILED FLOWCHART
+═══════════════════════════════════════════════ */
+.flowchart-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Object zone */
+.obj-zone {
+  border-radius: 14px;
+  padding: 20px 24px 24px;
+  margin-bottom: 4px;
+  border: 1px solid;
+  position: relative;
+}
+.obj-zone.z-lead { background: rgba(56,189,248,0.04);   border-color: rgba(56,189,248,0.2); }
+.obj-zone.z-deal { background: rgba(167,139,250,0.04);  border-color: rgba(167,139,250,0.2); }
+.obj-zone.z-impl { background: rgba(52,211,153,0.04);   border-color: rgba(52,211,153,0.2); }
+.obj-zone.z-gold { background: rgba(251,191,36,0.04);   border-color: rgba(251,191,36,0.2); }
+
+.oz-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+}
+.oz-icon {
+  width: 36px; height: 36px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; flex-shrink: 0;
+}
+.z-lead .oz-icon { background: var(--lead-mid); }
+.z-deal .oz-icon { background: var(--deal-mid); }
+.z-impl .oz-icon { background: var(--impl-mid); }
+.z-gold .oz-icon { background: var(--gold-mid); }
+.oz-meta { flex: 1; }
+.oz-name { font-family: 'IBM Plex Sans', sans-serif; font-size: 15px; font-weight: 700; }
+.z-lead .oz-name { color: var(--lead); }
+.z-deal .oz-name { color: var(--deal); }
+.z-impl .oz-name { color: var(--impl); }
+.z-gold .oz-name { color: var(--gold); }
+.oz-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.oz-sys {
+  font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 500;
+  padding: 3px 10px; border-radius: 999px;
+}
+.z-lead .oz-sys, .z-deal .oz-sys { background: var(--lead-dim); color: var(--lead); border: 1px solid var(--lead-mid); }
+.z-impl .oz-sys, .z-gold .oz-sys { background: var(--impl-dim); color: var(--impl); border: 1px solid var(--impl-mid); }
+
+/* Flow steps */
+.flow-steps {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+}
+.fstep {
+  border-radius: 8px; padding: 9px 14px;
+  display: flex; flex-direction: column; gap: 2px;
+  flex: 1; min-width: 120px;
+}
+.z-lead .fstep { background: var(--lead-dim);  border: 1px solid var(--lead-mid); }
+.z-deal .fstep { background: var(--deal-dim);  border: 1px solid var(--deal-mid); }
+.z-impl .fstep { background: var(--impl-dim);  border: 1px solid var(--impl-mid); }
+.z-gold .fstep { background: var(--gold-dim);  border: 1px solid var(--gold-mid); }
+.fstep-num { font-family: 'IBM Plex Mono', monospace; font-size: 8px; opacity: 0.45; }
+.fstep-name { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; font-weight: 700; }
+.z-lead .fstep-name { color: var(--lead); }
+.z-deal .fstep-name { color: var(--deal); }
+.z-impl .fstep-name { color: var(--impl); }
+.z-gold .fstep-name { color: var(--gold); }
+.fstep-sub  { font-size: 9.5px; color: var(--text-muted); }
+
+.f-arrow-h { flex-shrink: 0; display: flex; align-items: center; }
+.fah { width: 18px; height: 2px; background: #cbd5e1; position: relative; }
+.fah::after { content: ''; position: absolute; right: 0; top: -3px; border-left: 6px solid #cbd5e1; border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
+
+/* Gate in flowchart */
+.fc-gate {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  margin: 18px 0 16px;
+}
+.fc-diamond {
+  width: 82px; height: 82px;
+  background: var(--gate-dim); border: 2px solid var(--gate);
+  transform: rotate(45deg); border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  margin-block: 2px;
+}
+.fc-diamond span { transform: rotate(-45deg); font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 500; color: var(--gate); text-align: center; line-height: 1.4; }
+.fc-gate-label {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  color: var(--gate);
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+.fc-branches {
+  display: flex;
+  gap: 12px;
+  width: auto;
+  max-width: none;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.fc-branch {
+  flex: 0 1 230px;
+  border-radius: 9px; padding: 11px 14px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.fc-branch.yes { background: var(--impl-dim); border: 1px solid rgba(52,211,153,0.3); }
+.fc-branch.no  { background: var(--danger-dim); border: 1px solid rgba(248,113,113,0.3); }
+.fc-branch .b-label { font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; font-weight: 500; }
+.fc-branch.yes .b-label { color: var(--impl); }
+.fc-branch.no  .b-label { color: var(--danger); }
+.fc-branch .b-text { font-size: 11px; color: var(--text-muted); }
+
+/* Zone connector */
+.zone-connector {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px 0;
+}
+.zc-line { width: 2px; height: 20px; position: relative; }
+.zc-line::after { content: ''; position: absolute; bottom: 0; left: -4px; border-top: 6px solid; border-left: 5px solid transparent; border-right: 5px solid transparent; }
+.zc-line.lead-to-deal { background: linear-gradient(180deg, var(--lead), var(--deal)); }
+.zc-line.lead-to-deal::after { border-top-color: var(--deal); }
+.zc-line.deal-to-impl { background: linear-gradient(180deg, var(--deal), var(--impl)); }
+.zc-line.deal-to-impl::after { border-top-color: var(--impl); }
+.zc-line.impl-to-gold { background: linear-gradient(180deg, var(--impl), var(--gold)); }
+.zc-line.impl-to-gold::after { border-top-color: var(--gold); }
+.zc-badge {
+  font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; font-weight: 500;
+  padding: 3px 10px; border-radius: 999px; text-align: center;
+}
+.zc-badge.conv { background: linear-gradient(90deg, var(--lead-dim), var(--deal-dim)); color: var(--text-muted); border: 1px solid var(--border2); }
+.zc-badge.hoff { background: linear-gradient(90deg, var(--deal-dim), var(--impl-dim)); color: var(--text-muted); border: 1px solid var(--border2); }
+.zc-badge.live { background: linear-gradient(90deg, var(--impl-dim), var(--gold-dim)); color: var(--text-muted); border: 1px solid var(--border2); }
+/* ═══════════════════════════════════════════════
+   TAB 3 — EXECUTIVE SUMMARY
+═══════════════════════════════════════════════ */
+.exec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.exec-card {
+  background: var(--surface);
+  border-radius: 14px; padding: 20px;
+  border: 1px solid var(--border2);
+  box-shadow: var(--shadow);
+}
+.ec-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+}
+.ec-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 999px;
+}
+.ec-badge.b-lead { background: var(--lead-dim); color: var(--lead); border: 1px solid rgba(56,189,248,0.3); }
+.ec-badge.b-deal { background: var(--deal-dim); color: var(--deal); border: 1px solid rgba(167,139,250,0.3); }
+.ec-badge.b-impl { background: var(--impl-dim); color: var(--impl); border: 1px solid rgba(52,211,153,0.3); }
+.ec-badge.b-gold { background: var(--gold-dim); color: var(--gold); border: 1px solid rgba(251,191,36,0.3); }
+.ec-title { font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 700; }
+.ec-stages {
+  display: flex; flex-direction: column; gap: 5px;
+}
+.ec-stage-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 6px 10px; border-radius: 7px;
+}
+.ec-stage-row.lead  { background: rgba(56,189,248,0.06); }
+.ec-stage-row.deal  { background: rgba(167,139,250,0.06); }
+.ec-stage-row.impl  { background: rgba(52,211,153,0.06); }
+.ec-stage-row.gold  { background: rgba(251,191,36,0.06); }
+.esr-num { font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 500; min-width: 24px; }
+.lead .esr-num  { color: var(--lead); }
+.deal .esr-num  { color: var(--deal); }
+.impl .esr-num  { color: var(--impl); }
+.gold .esr-num  { color: var(--gold); }
+.esr-name { font-size: 12px; font-weight: 600; flex: 1; }
+.esr-owner {
+  font-size: 9.5px; color: var(--text-faint);
+  font-family: 'IBM Plex Mono', monospace;
+  background: #f1f5f9; padding: 1px 6px; border-radius: 999px;
+}
+
+/* Linear timeline */
+.exec-timeline {
+  background: var(--surface);
+  border-radius: 14px; padding: 24px 28px;
+  border: 1px solid var(--border2);
+  box-shadow: var(--shadow);
+  margin-bottom: 24px;
+}
+.etl-title { font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 20px; }
+.timeline-track {
+  display: flex; align-items: stretch; gap: 0;
+  overflow-x: auto; padding-bottom: 8px;
+}
+.tl-stage {
+  flex: 1; min-width: 90px;
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  position: relative;
+}
+.tl-dot {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 500;
+  flex-shrink: 0; z-index: 1; position: relative;
+}
+.tl-stage.lead .tl-dot  { background: var(--lead-mid);  color: var(--lead); border: 2px solid var(--lead); }
+.tl-stage.deal .tl-dot  { background: var(--deal-mid);  color: var(--deal); border: 2px solid var(--deal); }
+.tl-stage.impl .tl-dot  { background: var(--impl-mid);  color: var(--impl); border: 2px solid var(--impl); }
+.tl-stage.gold .tl-dot  { background: var(--gold-mid);  color: var(--gold); border: 2px solid var(--gold); }
+.tl-dot-label { font-size: 14px; font-weight: 600; margin-top: 7px; text-align: center; }
+.tl-stage.lead .tl-dot-label { color: var(--lead); }
+.tl-stage.deal .tl-dot-label { color: var(--deal); }
+.tl-stage.impl .tl-dot-label { color: var(--impl); }
+.tl-stage.gold .tl-dot-label { color: var(--gold); }
+.tl-owner { font-size: 11px; color: var(--text-faint); text-align: center; margin-top: 2px; }
+
+.tl-line-wrap {
+  position: absolute; top: 27px; left: calc(50% + 28px);
+  right: calc(-50% + 28px);
+  height: 2px; z-index: 0;
+}
+.tl-line-wrap .tl-connector { width: 100%; height: 100%; }
+.tl-stage.lead .tl-connector  { background: linear-gradient(90deg,var(--lead),var(--lead)); }
+.tl-stage.deal .tl-connector  { background: linear-gradient(90deg,var(--deal),var(--deal)); }
+.tl-stage.impl .tl-connector  { background: linear-gradient(90deg,var(--impl),var(--impl)); }
+.tl-stage:last-child .tl-line-wrap { display: none; }
+
+/* Object boundary markers */
+.tl-boundary {
+  position: absolute; top: -28px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* Analytics section */
+.analytics-card {
+  background: var(--surface);
+  border-radius: 14px; padding: 20px 24px;
+  border: 1px solid var(--border2);
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+.ac-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.ac-icon { font-size: 20px; }
+.ac-title { font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 700; }
+.ac-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.ac-item {
+  background: #f8fafc; border-radius: 9px; padding: 12px 14px;
+  border: 1px solid var(--border2);
+}
+.ac-item-label { font-family: 'IBM Plex Mono', monospace; font-size: 8.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 5px; }
+.ac-item-value { font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); }
+.ac-item-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+/* Feedback loop */
+.loop-banner {
+  background: var(--surface);
+  border-radius: 12px; padding: 14px 20px;
+  border: 1px dashed rgba(52,211,153,0.4);
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: var(--shadow);
+}
+.lb-arrow { font-size: 22px; color: var(--impl); flex-shrink: 0; }
+.lb-text  { flex: 1; }
+.lb-title { font-weight: 700; font-size: 13px; color: var(--impl); }
+.lb-sub   { font-size: 10.5px; color: var(--text-muted); font-style: italic; margin-top: 1px; }
+.lb-tag { font-family: 'IBM Plex Mono', monospace; font-size: 8px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; background: var(--impl-dim); color: var(--impl); padding: 3px 9px; border-radius: 999px; flex-shrink: 0; }
+
+/* Footer */
+.page-footer { text-align: center; padding: 24px 40px 32px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); border-top: 1px solid var(--border); }
+
+/* Animations */
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.tab-panel.active > * { animation: fadeIn 0.3s ease both; }
+.tab-panel.active > *:nth-child(2) { animation-delay:0.05s; }
+.tab-panel.active > *:nth-child(3) { animation-delay:0.1s; }
+.tab-panel.active > *:nth-child(4) { animation-delay:0.15s; }
+
+/* Scale up content in first two diagrams */
+#tab1 .panel-title,
+#tab2 .panel-title {
+  font-size: 24px;
+}
+#tab1 .panel-sub,
+#tab2 .panel-sub {
+  font-size: 15px;
+}
+#tab1 .leg-item,
+#tab2 .leg-item {
+  font-size: 14px;
+}
+#tab1 .lh-name {
+  font-size: 16px;
+}
+#tab1 .lh-label {
+  font-size: 10px;
+}
+#tab1 .lh-tag {
+  font-size: 10px;
+}
+#tab1 .lane-col {
+  padding: 24px 16px;
+}
+#tab1 .sn-num {
+  font-size: 9px;
+}
+#tab1 .sn-name {
+  font-size: 18px;
+}
+#tab1 .sn-sub {
+  font-size: 13px;
+}
+#tab1 .lane-arrow {
+  height: 18px;
+}
+#tab1 .gate-diamond {
+  width: 88px;
+  height: 88px;
+}
+#tab1 .gate-diamond span {
+  font-size: 11px;
+}
+#tab1 .gate-label {
+  font-size: 18px;
+}
+#tab1 .go-yes,
+#tab1 .go-no {
+  font-size: 10px;
+  padding: 3px 10px;
+}
+
+#tab2 .flowchart-wrap {
+  max-width: 1080px;
+}
+#tab2 .oz-name {
+  font-size: 19px;
+}
+#tab2 .oz-sub {
+  font-size: 13px;
+}
+#tab2 .oz-sys {
+  font-size: 10px;
+}
+#tab2 .fstep {
+  min-width: 150px;
+  padding: 11px 16px;
+}
+#tab2 .fstep-num {
+  font-size: 9px;
+}
+#tab2 .fstep-name {
+  font-size: 15px;
+}
+#tab2 .fstep-sub {
+  font-size: 12px;
+}
+#tab2 .fc-diamond {
+  width: 94px;
+  height: 94px;
+}
+#tab2 .fc-diamond span {
+  font-size: 12px;
+}
+#tab2 .fc-gate-label {
+  font-size: 16px;
+}
+#tab2 .fc-branch .b-label {
+  font-size: 10px;
+}
+#tab2 .fc-branch .b-text {
+  font-size: 12px;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .masthead,
+  .tabs-nav,
+  .tab-panel,
+  .page-footer {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+  .lane-col {
+    padding: 16px 10px;
+  }
+  .gate-diamond {
+    width: 64px;
+    height: 64px;
+  }
+  .handoff-banner {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 980px) {
+  .swimlane-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .lane-headers,
+  .lane-body {
+    min-width: 920px;
+  }
+  .exec-grid {
+    grid-template-columns: 1fr;
+  }
+  .ac-grid {
+    grid-template-columns: 1fr;
+  }
+  .fc-branches {
+    flex-direction: column;
+    max-width: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .tabs-nav {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 16px;
+  }
+  .tab-btn {
+    border-radius: 8px;
+    border-bottom: 1px solid transparent;
+    bottom: 0;
+  }
+  .tab-btn.active {
+    border-bottom-color: var(--border2);
+  }
+  .timeline-track {
+    gap: 10px;
+    padding-bottom: 12px;
+  }
+  .tl-stage {
+    min-width: 110px;
+  }
+  .loop-banner,
+  .handoff-banner {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<div class="masthead">
+  <div class="mh-eyebrow">CRM Architecture · Process Design · Power BI Integration</div>
+  <h1 class="mh-title">
+    ATOM CORE 8 — <span class="hl-lead">Lead</span> → <span class="hl-deal">Deal</span> → <span class="hl-impl">Implement</span> → <span class="hl-gold">Active</span>
+  </h1>
+  <p class="mh-sub">Standardized lifecycle workflow ensuring clean funnel analytics, correct CRM object transitions, and accurate Power BI reporting across all 8 CORE stages.</p>
+</div>
+
+<!-- TABS -->
+<div class="tabs-nav" role="tablist" aria-label="Workflow diagram tabs">
+  <button id="tab-btn-1" class="tab-btn t1 active" role="tab" aria-controls="tab1" aria-selected="true" tabindex="0" onclick="switchTab(1)">① Swimlane Diagram</button>
+  <button id="tab-btn-2" class="tab-btn t2" role="tab" aria-controls="tab2" aria-selected="false" tabindex="-1" onclick="switchTab(2)">② Detailed Flowchart</button>
+  <button id="tab-btn-3" class="tab-btn t3" role="tab" aria-controls="tab3" aria-selected="false" tabindex="-1" onclick="switchTab(3)">③ Executive Summary</button>
+</div>
+
+<!-- ═══ TAB 1: SWIMLANE ═══════════════════════ -->
+<div class="tab-panel active" id="tab1" role="tabpanel" aria-labelledby="tab-btn-1" tabindex="0">
+  <div class="panel-title">Swimlane Process Diagram</div>
+  <div class="panel-sub">Team ownership by lane · Object transitions · Decision gates · HubSpot vs Internal system boundary</div>
+
+  <div class="legend-row">
+    <div class="leg-item"><div class="leg-dot" style="background:var(--lead)"></div>Lead Object (Light Blue)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--deal)"></div>Deal Object (Purple)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--impl)"></div>Implementation (Green)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--gold)"></div>Active Client (Gold)</div>
+    <div class="leg-item"><div class="leg-diamond" style="background:var(--gate)"></div>Decision Gate</div>
+  </div>
+
+  <div class="swimlane-wrapper">
+    <!-- HEADERS -->
+    <div class="lane-headers">
+      <div class="lh-spacer"></div>
+      <div class="lane-head">
+        <div class="lh-label">Lane 01</div>
+        <div class="lh-name c-lead">Marketing</div>
+        <div class="lh-tag t-hs">HubSpot</div>
+      </div>
+      <div class="lane-head">
+        <div class="lh-label">Lane 02</div>
+        <div class="lh-name c-deal">Sales</div>
+        <div class="lh-tag t-hs">HubSpot</div>
+      </div>
+      <div class="lane-head">
+        <div class="lh-label">Lane 03</div>
+        <div class="lh-name c-impl">Delivery / Implementation</div>
+        <div class="lh-tag t-int">Internal Tracker</div>
+      </div>
+      <div class="lane-head">
+        <div class="lh-label">Lane 04</div>
+        <div class="lh-name c-gold">Customer Success</div>
+        <div class="lh-tag t-int">Internal Tracker</div>
+      </div>
+    </div>
+
+    <!-- LEAD STAGES -->
+    <div class="lane-body">
+      <div class="lane-gutter"><span class="lg-text">Lead Management</span></div>
+      <div class="lane-col">
+        <div class="snode lead"><div class="sn-num">CORE 01</div><div class="sn-name">Lead</div><div class="sn-sub">New lead created via inbound / outbound</div></div>
+        <div class="lane-arrow lead"></div>
+        <div class="snode lead"><div class="sn-num">CORE 01 · P2</div><div class="sn-name">Attempting</div><div class="sn-sub">Outreach initiated, no response yet</div></div>
+        <div class="lane-arrow lead"></div>
+        <div class="snode lead"><div class="sn-num">CORE 01 · P3</div><div class="sn-name">Connected</div><div class="sn-sub">First meaningful conversation achieved</div></div>
+        <div class="lane-arrow lead"></div>
+        <div class="gate-node">
+          <div class="gate-diamond"><span>Qualified?</span></div>
+          <div class="gate-label">Qualify Gate</div>
+          <div class="gate-options">
+            <span class="go-yes">✓ YES</span>
+            <span class="go-no">✗ NO</span>
+          </div>
+        </div>
+        <div class="lane-arrow lead"></div>
+        <div class="snode nurture"><div class="sn-name">Nurture / Disqualify</div><div class="sn-sub">Return to pipeline when ready</div></div>
+      </div>
+      <div class="lane-col is-placeholder">
+        <!-- empty — Sales not yet active -->
+        <div class="lane-placeholder-spacer"></div>
+        <div class="snode deal" style="opacity:0.35"><div class="sn-name">Awaiting Lead</div><div class="sn-sub">Deal created only after qualified lead conversion</div></div>
+      </div>
+      <div class="lane-col"></div>
+      <div class="lane-col"></div>
+    </div>
+
+    <!-- CONVERSION BANNER -->
+    <div class="lane-body">
+      <div class="handoff-banner" style="grid-column:1/-1; background:rgba(56,189,248,0.06); border-color:rgba(56,189,248,0.15);">
+        <span style="font-size:14px">📋</span>
+        <div class="conv-box conv-lead">Lead Object</div>
+        <div class="conv-arrow"></div>
+        <div class="conv-box conv-deal">Deal Object</div>
+        <span class="conv-note">Qualified lead must be converted to create a Deal — required for accurate funnel reporting in Power BI</span>
+        <span class="conv-chip">⚠ Analytics Dependency</span>
+      </div>
+    </div>
+
+    <!-- DEAL STAGES -->
+    <div class="lane-body">
+      <div class="lane-gutter"><span class="lg-text">Deal Pipeline</span></div>
+      <div class="lane-col"></div>
+      <div class="lane-col">
+        <div class="snode deal"><div class="sn-num">CORE 02–03</div><div class="sn-name">Qualify → Discovery</div><div class="sn-sub">BANT, Stakeholder Map, Workshops</div></div>
+        <div class="lane-arrow deal"></div>
+        <div class="snode deal"><div class="sn-num">CORE 04</div><div class="sn-name">Validate</div><div class="sn-sub">POV, V1–V3 approval cycle</div></div>
+        <div class="lane-arrow deal"></div>
+        <div class="snode deal"><div class="sn-num">CORE 05</div><div class="sn-name">Contract</div><div class="sn-sub">MSA / SOW · Redlines · Signed</div></div>
+        <div class="lane-arrow deal"></div>
+        <div class="gate-node">
+          <div class="gate-diamond"><span>Contract Signed?</span></div>
+          <div class="gate-label">Close Gate</div>
+          <div class="gate-options">
+            <span class="go-yes">✓ YES</span>
+            <span class="go-no">✗ NO</span>
+          </div>
+        </div>
+        <div class="lane-arrow deal"></div>
+        <div class="snode lost"><div class="sn-name">Lost Deal</div><div class="sn-sub">Closed-Lost with reason code</div></div>
+      </div>
+      <div class="lane-col"></div>
+      <div class="lane-col"></div>
+    </div>
+
+    <!-- HANDOFF BANNER -->
+    <div class="lane-body">
+      <div class="handoff-banner">
+        <div class="hb-lock">🔒</div>
+        <span class="hb-text"><span class="hb-lock-word">Commercial Lock</span></span>
+        <div class="hb-line"></div>
+        <span class="hb-text"><span class="hb-arrow-word">Delivery Handoff</span></span>
+        <div class="hb-rocket">🚀</div>
+        <span style="font-size:11px;color:var(--text-muted);font-style:italic">Implementation Record created · Data transitions from HubSpot to Internal Tracker</span>
+      </div>
+    </div>
+
+    <!-- IMPLEMENTATION STAGES -->
+    <div class="lane-body">
+      <div class="lane-gutter"><span class="lg-text">Implementation</span></div>
+      <div class="lane-col"></div>
+      <div class="lane-col"></div>
+      <div class="lane-col">
+        <div class="snode impl"><div class="sn-num">CORE 06 · I1</div><div class="sn-name">Initiate / Discover</div><div class="sn-sub">Project kickoff, requirements alignment</div></div>
+        <div class="lane-arrow impl"></div>
+        <div class="snode impl"><div class="sn-num">CORE 06 · I2</div><div class="sn-name">Design</div><div class="sn-sub">Solution architecture, workflow design</div></div>
+        <div class="lane-arrow impl"></div>
+        <div class="snode impl"><div class="sn-num">CORE 06 · I3</div><div class="sn-name">Configure</div><div class="sn-sub">Build, integration, configuration</div></div>
+        <div class="lane-arrow impl"></div>
+        <div class="snode impl"><div class="sn-num">CORE 06 · I4</div><div class="sn-name">UAT</div><div class="sn-sub">Client acceptance testing</div></div>
+        <div class="lane-arrow impl"></div>
+        <div class="snode impl"><div class="sn-num">CORE 06 · I5</div><div class="sn-name">Deploy</div><div class="sn-sub">Go-live · Production release</div></div>
+      </div>
+      <div class="lane-col"></div>
+    </div>
+
+    <!-- POST-IMPL -->
+    <div class="lane-body">
+      <div class="lane-gutter"><span class="lg-text">Post-Live</span></div>
+      <div class="lane-col"></div>
+      <div class="lane-col"></div>
+      <div class="lane-col">
+        <div class="snode impl"><div class="sn-num">CORE 07</div><div class="sn-name">Warranty</div><div class="sn-sub">Hypercare · Stabilization · Issue resolution</div></div>
+      </div>
+      <div class="lane-col">
+        <div class="snode gold"><div class="sn-num">CORE 08</div><div class="sn-name">Active Client</div><div class="sn-sub">Steady-state · CS engagement · Expansion</div></div>
+      </div>
+    </div>
+
+  </div><!-- /swimlane-wrapper -->
+</div>
+
+<!-- ═══ TAB 2: DETAILED FLOWCHART ═══════════════ -->
+<div class="tab-panel" id="tab2" role="tabpanel" aria-labelledby="tab-btn-2" tabindex="0" hidden>
+  <div class="panel-title">Detailed Process Flowchart</div>
+  <div class="panel-sub">Object-by-object breakdown · Decision logic · Team handoffs · Why Lead → Deal conversion is essential</div>
+
+  <div class="legend-row">
+    <div class="leg-item"><div class="leg-dot" style="background:var(--lead)"></div>Lead Object — HubSpot</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--deal)"></div>Deal Object — HubSpot</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--impl)"></div>Implementation Record — Internal</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--gold)"></div>Active Client Record — Internal</div>
+    <div class="leg-item"><div class="leg-diamond" style="background:var(--gate)"></div>Decision Gate</div>
+  </div>
+
+  <div class="flowchart-wrap">
+
+    <!-- ZONE 1: LEAD -->
+    <div class="obj-zone z-lead">
+      <div class="oz-header">
+        <div class="oz-icon">👤</div>
+        <div class="oz-meta">
+          <div class="oz-name">Lead Object — Pre-Sales Qualification</div>
+          <div class="oz-sub">Owner: Marketing / Sales · System: HubSpot · Maps to: CORE Stage 1</div>
+        </div>
+        <div class="oz-sys">HubSpot CRM</div>
+      </div>
+      <div class="flow-steps">
+        <div class="fstep"><div class="fstep-num">P1</div><div class="fstep-name">Lead</div><div class="fstep-sub">Lead created via form, import, or outbound</div></div>
+        <div class="f-arrow-h"><div class="fah"></div></div>
+        <div class="fstep"><div class="fstep-num">P2</div><div class="fstep-name">Attempting</div><div class="fstep-sub">Active outreach, no response yet</div></div>
+        <div class="f-arrow-h"><div class="fah"></div></div>
+        <div class="fstep"><div class="fstep-num">P3</div><div class="fstep-name">Connected</div><div class="fstep-sub">First live conversation established</div></div>
+        <div class="f-arrow-h"><div class="fah"></div></div>
+        <div class="fstep"><div class="fstep-num">P4</div><div class="fstep-name">Qualify</div><div class="fstep-sub">BANT criteria assessed, interest confirmed</div></div>
+      </div>
+
+      <div class="fc-gate" style="margin-top:18px;">
+        <div class="fc-diamond"><span>Qualified?</span></div>
+        <div class="fc-gate-label">Stage Gate: Qualify Decision</div>
+        <div class="fc-branches">
+          <div class="fc-branch no">
+            <div class="b-label">✗ Not Qualified</div>
+            <div class="b-text">Move to Nurture (P4) or Disqualify (P5). Keep in Lead — do NOT create a Deal. Re-enter pipeline when criteria met.</div>
+          </div>
+          <div class="fc-branch yes">
+            <div class="b-label">✓ Qualified — Convert Lead</div>
+            <div class="b-text">Convert Lead to Contact + Company + <strong>Deal</strong> in HubSpot. This is required for funnel analytics to track the full Lead→Close path.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="zone-connector">
+      <div class="zc-badge conv">Lead → Deal Conversion · Required for Power BI Funnel Accuracy</div>
+      <div class="zc-line lead-to-deal"></div>
+    </div>
+
+    <!-- ZONE 2: DEAL -->
+    <div class="obj-zone z-deal">
+      <div class="oz-header">
+        <div class="oz-icon">💼</div>
+        <div class="oz-meta">
+          <div class="oz-name">Deal Object — Sales Opportunity Pipeline</div>
+          <div class="oz-sub">Owner: Sales · System: HubSpot · Maps to: CORE Stages 2–5</div>
+        </div>
+        <div class="oz-sys">HubSpot CRM</div>
+      </div>
+      <div class="flow-steps">
+        <div class="fstep"><div class="fstep-num">CORE 02</div><div class="fstep-name">Qualify</div><div class="fstep-sub">BANT doc · Stakeholder map</div></div>
+        <div class="f-arrow-h"><div class="fah"></div></div>
+        <div class="fstep"><div class="fstep-num">CORE 03</div><div class="fstep-name">Discovery</div><div class="fstep-sub">Workshops · Requirements · Workflow docs</div></div>
+        <div class="f-arrow-h"><div class="fah"></div></div>
+        <div class="fstep"><div class="fstep-num">CORE 04</div><div class="fstep-name">Validate</div><div class="fstep-sub">POV · V1→V3 approval cycle</div></div>
+        <div class="f-arrow-h"><div class="fah"></div></div>
+        <div class="fstep"><div class="fstep-num">CORE 05</div><div class="fstep-name">Contract</div><div class="fstep-sub">MSA · SOW · Redlines · Signed</div></div>
+      </div>
+
+      <div class="fc-gate" style="margin-top:18px;">
+        <div class="fc-diamond"><span>Contract Signed?</span></div>
+        <div class="fc-gate-label">Stage Gate: Commercial Lock</div>
+        <div class="fc-branches">
+          <div class="fc-branch no">
+            <div class="b-label">✗ Not Signed</div>
+            <div class="b-text">Deal moves to Closed-Lost with reason code. Required for accurate win-rate and forecast reporting in Power BI.</div>
+          </div>
+          <div class="fc-branch yes">
+            <div class="b-label">✓ Signed — Create Implementation Record</div>
+            <div class="b-text">Mark Deal as Closed-Won in HubSpot. Create Implementation Record in internal tracker. Handoff to Delivery team.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="zone-connector">
+      <div class="zc-badge hoff">Commercial Lock · Delivery Handoff · HubSpot → Internal Tracker</div>
+      <div class="zc-line deal-to-impl"></div>
+    </div>
+
+    <!-- ZONE 3: IMPLEMENTATION -->
+    <div class="obj-zone z-impl">
+      <div class="oz-header">
+        <div class="oz-icon">⚙️</div>
+        <div class="oz-meta">
+          <div class="oz-name">Implementation Record — ATOM 3D Delivery</div>
+          <div class="oz-sub">Owner: Delivery Team · System: Internal Tracker · Maps to: CORE Stage 6</div>
+        </div>
+        <div class="oz-sys">Internal Tracker</div>
+      </div>
+      <div class="flow-steps">
+        <div class="fstep"><div class="fstep-num">I1</div><div class="fstep-name">Initiate</div><div class="fstep-sub">Kickoff · Scope confirmation</div></div>
+        <div class="f-arrow-h"><div class="fah"></div></div>
+        <div class="fstep"><div class="fstep-num">I2</div><div class="fstep-name">Design</div><div class="fstep-sub">Architecture · Solution design</div></div>
+        <div class="f-arrow-h"><div class="fah"></div></div>
+        <div class="fstep"><div class="fstep-num">I3</div><div class="fstep-name">Configure</div><div class="fstep-sub">Build · Integration · Setup</div></div>
+        <div class="f-arrow-h"><div class="fah"></div></div>
+        <div class="fstep"><div class="fstep-num">I4</div><div class="fstep-name">UAT</div><div class="fstep-sub">Client acceptance testing</div></div>
+        <div class="f-arrow-h"><div class="fah"></div></div>
+        <div class="fstep"><div class="fstep-num">I5</div><div class="fstep-name">Deploy</div><div class="fstep-sub">Go-live · Production release</div></div>
+      </div>
+    </div>
+
+    <div class="zone-connector">
+      <div class="zc-badge live">Go-Live → Warranty → Active Client</div>
+      <div class="zc-line impl-to-gold"></div>
+    </div>
+
+    <!-- ZONE 4: ACTIVE -->
+    <div class="obj-zone z-gold">
+      <div class="oz-header">
+        <div class="oz-icon">🌟</div>
+        <div class="oz-meta">
+          <div class="oz-name">Active Client Record — Post-Implementation Lifecycle</div>
+          <div class="oz-sub">Owner: Operations / Customer Success · System: Internal Tracker · Maps to: CORE Stages 7–8</div>
+        </div>
+        <div class="oz-sys">Internal Tracker</div>
+      </div>
+      <div class="flow-steps">
+        <div class="fstep"><div class="fstep-num">CORE 07</div><div class="fstep-name">Warranty</div><div class="fstep-sub">Hypercare · Stabilization · Issue resolution</div></div>
+        <div class="f-arrow-h"><div class="fah"></div></div>
+        <div class="fstep"><div class="fstep-num">CORE 08</div><div class="fstep-name">Active</div><div class="fstep-sub">Steady-state · SLA monitoring · CS reviews</div></div>
+        <div class="f-arrow-h"><div class="fah"></div></div>
+        <div class="fstep" style="border-style:dashed; opacity:0.7"><div class="fstep-num">Loop</div><div class="fstep-name">Expand ↩</div><div class="fstep-sub">New opportunities restart at CORE 02 — Qualify</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ TAB 3: EXECUTIVE SUMMARY ════════════════ -->
+<div class="tab-panel" id="tab3" role="tabpanel" aria-labelledby="tab-btn-3" tabindex="0" hidden>
+  <div class="panel-title">Executive Summary View</div>
+  <div class="panel-sub">Simplified lifecycle for leadership presentation · Power BI alignment · Object ownership at a glance</div>
+
+  <!-- Linear 8-stage timeline -->
+  <div class="exec-timeline">
+    <div class="etl-title">ATOM CORE 8 — Full Lifecycle Timeline</div>
+    <div class="timeline-track">
+      <div class="tl-stage lead" style="position:relative;">
+        <div class="tl-boundary" style="color:var(--lead); background:var(--lead-dim); border:1px solid rgba(56,189,248,0.3); left:0;">HubSpot CRM</div>
+        <div class="tl-dot">1</div>
+        <div class="tl-dot-label">Lead</div>
+        <div class="tl-owner">Marketing</div>
+        <div class="tl-line-wrap"><div class="tl-connector"></div></div>
+      </div>
+      <div class="tl-stage deal">
+        <div class="tl-dot">2</div>
+        <div class="tl-dot-label">Qualify</div>
+        <div class="tl-owner">Sales</div>
+        <div class="tl-line-wrap"><div class="tl-connector"></div></div>
+      </div>
+      <div class="tl-stage deal">
+        <div class="tl-dot">3</div>
+        <div class="tl-dot-label">Discovery</div>
+        <div class="tl-owner">Product / BA</div>
+        <div class="tl-line-wrap"><div class="tl-connector"></div></div>
+      </div>
+      <div class="tl-stage deal">
+        <div class="tl-dot">4</div>
+        <div class="tl-dot-label">Validate</div>
+        <div class="tl-owner">Product + Delivery</div>
+        <div class="tl-line-wrap"><div class="tl-connector"></div></div>
+      </div>
+      <div class="tl-stage deal" style="position:relative;">
+        <div class="tl-dot">5</div>
+        <div class="tl-dot-label">Contract</div>
+        <div class="tl-owner">Sales + Legal</div>
+        <div class="tl-line-wrap"><div class="tl-connector" style="background:linear-gradient(90deg,var(--deal),var(--impl))"></div></div>
+      </div>
+      <div class="tl-stage impl" style="position:relative;">
+        <div class="tl-boundary" style="color:var(--impl); background:var(--impl-dim); border:1px solid rgba(52,211,153,0.3); left:0;">Internal Tracker</div>
+        <div class="tl-dot">6</div>
+        <div class="tl-dot-label">Implement</div>
+        <div class="tl-owner">Delivery</div>
+        <div class="tl-line-wrap"><div class="tl-connector"></div></div>
+      </div>
+      <div class="tl-stage impl">
+        <div class="tl-dot">7</div>
+        <div class="tl-dot-label">Warranty</div>
+        <div class="tl-owner">Operations</div>
+        <div class="tl-line-wrap"><div class="tl-connector" style="background:linear-gradient(90deg,var(--impl),var(--gold))"></div></div>
+      </div>
+      <div class="tl-stage gold">
+        <div class="tl-dot">8</div>
+        <div class="tl-dot-label">Active</div>
+        <div class="tl-owner">Ops / CS</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4-object summary cards -->
+  <div class="exec-grid">
+    <div class="exec-card">
+      <div class="ec-header"><div class="ec-badge b-lead">Lead Object</div><span class="ec-title">Pre-Sales Qualification</span></div>
+      <div class="ec-stages">
+        <div class="ec-stage-row lead"><span class="esr-num">P1</span><span class="esr-name">Lead — New</span><span class="esr-owner">Marketing</span></div>
+        <div class="ec-stage-row lead"><span class="esr-num">P2</span><span class="esr-name">Attempting Contact</span><span class="esr-owner">Sales</span></div>
+        <div class="ec-stage-row lead"><span class="esr-num">P3</span><span class="esr-name">Connected</span><span class="esr-owner">Sales</span></div>
+        <div class="ec-stage-row lead"><span class="esr-num">P4</span><span class="esr-name">Nurture</span><span class="esr-owner">Marketing</span></div>
+        <div class="ec-stage-row lead"><span class="esr-num">P5</span><span class="esr-name">Disqualified</span><span class="esr-owner">Sales</span></div>
+      </div>
+    </div>
+
+    <div class="exec-card">
+      <div class="ec-header"><div class="ec-badge b-deal">Deal Object</div><span class="ec-title">Sales Opportunity</span></div>
+      <div class="ec-stages">
+        <div class="ec-stage-row deal"><span class="esr-num">02</span><span class="esr-name">Qualify</span><span class="esr-owner">Sales + Product</span></div>
+        <div class="ec-stage-row deal"><span class="esr-num">03</span><span class="esr-name">Discovery</span><span class="esr-owner">Product / BA</span></div>
+        <div class="ec-stage-row deal"><span class="esr-num">04</span><span class="esr-name">Validate</span><span class="esr-owner">Product + Delivery</span></div>
+        <div class="ec-stage-row deal"><span class="esr-num">05</span><span class="esr-name">Contract</span><span class="esr-owner">Sales + Legal</span></div>
+      </div>
+    </div>
+
+    <div class="exec-card">
+      <div class="ec-header"><div class="ec-badge b-impl">Implementation Record</div><span class="ec-title">ATOM 3D Delivery</span></div>
+      <div class="ec-stages">
+        <div class="ec-stage-row impl"><span class="esr-num">I1</span><span class="esr-name">Initiate / Discover</span><span class="esr-owner">Delivery</span></div>
+        <div class="ec-stage-row impl"><span class="esr-num">I2</span><span class="esr-name">Design</span><span class="esr-owner">Delivery</span></div>
+        <div class="ec-stage-row impl"><span class="esr-num">I3</span><span class="esr-name">Configure</span><span class="esr-owner">Delivery</span></div>
+        <div class="ec-stage-row impl"><span class="esr-num">I4</span><span class="esr-name">UAT</span><span class="esr-owner">Delivery + Client</span></div>
+        <div class="ec-stage-row impl"><span class="esr-num">I5</span><span class="esr-name">Deploy</span><span class="esr-owner">Delivery</span></div>
+      </div>
+    </div>
+
+    <div class="exec-card">
+      <div class="ec-header"><div class="ec-badge b-gold">Active Client</div><span class="ec-title">Post-Implementation</span></div>
+      <div class="ec-stages">
+        <div class="ec-stage-row gold"><span class="esr-num">07</span><span class="esr-name">Warranty / Hypercare</span><span class="esr-owner">Operations</span></div>
+        <div class="ec-stage-row gold"><span class="esr-num">08</span><span class="esr-name">Active — Steady State</span><span class="esr-owner">Ops / CS</span></div>
+        <div class="ec-stage-row gold"><span class="esr-num">↩</span><span class="esr-name">Expand → Qualify Loop</span><span class="esr-owner">CS + Sales</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analytics impact card -->
+  <div class="analytics-card">
+    <div class="ac-header">
+      <div class="ac-icon">📊</div>
+      <div class="ac-title">Power BI Analytics Dependency — Why Lead → Deal Conversion is Required</div>
+    </div>
+    <div class="ac-grid">
+      <div class="ac-item">
+        <div class="ac-item-label">Problem</div>
+        <div class="ac-item-value" style="color:var(--danger)">Broken Funnel</div>
+        <div class="ac-item-sub">Deals created without Lead conversion break the top-of-funnel metrics — no Lead source, no contact origin, incomplete pipeline attribution</div>
+      </div>
+      <div class="ac-item">
+        <div class="ac-item-label">Required Process</div>
+        <div class="ac-item-value" style="color:var(--impl)">Lead → Deal</div>
+        <div class="ac-item-sub">Every Deal must originate from a converted Lead. HubSpot enforces the association, enabling full funnel tracking from first touch to close</div>
+      </div>
+      <div class="ac-item">
+        <div class="ac-item-label">Power BI Benefit</div>
+        <div class="ac-item-value" style="color:var(--gold)">Clean Reporting</div>
+        <div class="ac-item-sub">Accurate stage conversion rates, lead-to-close velocity, source attribution, team performance metrics, and forecast accuracy across all 8 CORE stages</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Expansion loop -->
+  <div class="loop-banner">
+    <div class="lb-arrow">↩</div>
+    <div class="lb-text">
+      <div class="lb-title">Active → Qualify · Account Expansion Loop</div>
+      <div class="lb-sub">"New opportunities within existing Active accounts restart the qualification process at CORE Stage 2 — ensuring expansion deals are also tracked with full funnel integrity."</div>
+    </div>
+    <div class="lb-tag">Expansion Loop</div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="page-footer">ATOM CORE 8 · CRM Lifecycle Architecture · HubSpot + Power BI Integration · Internal Reference · Confidential</div>
+
+<script>
+  function switchTab(n) {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    tabButtons.forEach((button, i) => {
+      const isActive = i === n - 1;
+      button.classList.toggle('active', isActive);
+      button.setAttribute('aria-selected', String(isActive));
+      button.setAttribute('tabindex', isActive ? '0' : '-1');
+    });
+
+    tabPanels.forEach((panel, i) => {
+      const isActive = i === n - 1;
+      panel.classList.toggle('active', isActive);
+      panel.hidden = !isActive;
+    });
+
+    tabButtons[n - 1]?.focus();
+  }
+
+  document.querySelector('.tabs-nav')?.addEventListener('keydown', (event) => {
+    const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+    const currentIndex = tabs.findIndex((tab) => tab.classList.contains('active'));
+
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      const nextIndex = (currentIndex + 1) % tabs.length;
+      switchTab(nextIndex + 1);
+    }
+
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      const prevIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+      switchTab(prevIndex + 1);
+    }
+
+    if (event.key === 'Home') {
+      event.preventDefault();
+      switchTab(1);
+    }
+
+    if (event.key === 'End') {
+      event.preventDefault();
+      switchTab(tabs.length);
+    }
+  });
+</script>
+</body>
+</html>
